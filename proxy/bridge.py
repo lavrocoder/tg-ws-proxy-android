@@ -3,7 +3,7 @@ import logging
 import struct
 
 from ._aes import Cipher, algorithms, modes
-from typing import Dict, List, Optional
+from typing import List, Optional
 from urllib.parse import urlencode
 
 from .utils import *
@@ -11,20 +11,13 @@ from .stats import stats
 from .balancer import balancer
 from .config import proxy_config
 from .raw_websocket import RawWebSocket
+from .pool import cf_worker_pool
 
 
 log = logging.getLogger('tg-mtproto-proxy')
 _st_I_le = struct.Struct('<I')
 
 ZERO_64 = b'\x00' * 64
-DC_DEFAULT_IPS: Dict[int, str] = {
-    1: '149.154.175.50',
-    2: '149.154.167.51',
-    3: '149.154.175.100',
-    4: '149.154.167.91',
-    5: '149.154.171.5',
-    203: '91.105.192.100'
-}
 
 
 class CryptoCtx:
@@ -135,7 +128,6 @@ class MsgSplitter:
         return packet_len
 
 
-
 async def do_fallback(reader, writer, relay_init, label,
                        dc: int, is_media: bool, media_tag: str,
                        ctx: CryptoCtx, splitter=None):
@@ -188,23 +180,27 @@ async def _cfproxy_worker_fallback(reader, writer, relay_init, label,
     if not worker_domain:
         return False
 
-    query = urlencode({
-        'dst': fallback_dst,
-        'dc': str(dc),
-        'media': '1' if is_media else '0',
-    })
-    path = f'/apiws?{query}'
+    ws = await cf_worker_pool.get(dc, worker_domain, fallback_dst)
+    if ws:
+        log.info("[%s] DC%d%s -> CF worker pool hit for %s",
+                 label, dc, media_tag, fallback_dst)
+    else:
+        query = urlencode({
+            'dst': fallback_dst,
+            'dc': str(dc),
+        })
+        path = f'/apiws?{query}'
 
-    log.info("[%s] DC%d%s -> trying CF worker for %s",
-             label, dc, media_tag, fallback_dst)
+        log.info("[%s] DC%d%s -> trying CF worker for %s",
+                 label, dc, media_tag, fallback_dst)
 
-    try:
-        ws = await RawWebSocket.connect(worker_domain, worker_domain,
-                                        timeout=10.0, path=path)
-    except Exception as exc:
-        log.warning("[%s] DC%d%s CF worker failed: %s",
-                    label, dc, media_tag, repr(exc))
-        return False
+        try:
+            ws = await RawWebSocket.connect(worker_domain, worker_domain,
+                                            timeout=10.0, path=path)
+        except Exception as exc:
+            log.warning("[%s] DC%d%s CF worker failed: %s",
+                        label, dc, media_tag, repr(exc))
+            return False
 
     stats.connections_cfproxy += 1
     await ws.send(relay_init)
