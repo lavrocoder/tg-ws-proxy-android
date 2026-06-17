@@ -633,7 +633,7 @@ def main():
     proxy_config.cfproxy_worker_domains = coerce_domain_list(args.cfproxy_worker_domain)
     proxy_config.fake_tls_domain = args.fake_tls_domain.strip()
     proxy_config.proxy_protocol = args.proxy_protocol
-    proxy_config.ws_keepalive_interval = max(0.0, args.ws_keepalive)
+    proxy_config.ws_keepalive_interval = max(0, args.ws_keepalive)
 
     log_level = logging.DEBUG if args.verbose else logging.INFO
     log_fmt = logging.Formatter('%(asctime)s  %(levelname)-5s  %(message)s',

@@ -268,6 +268,7 @@ def apply_proxy_config(cfg: dict) -> bool:
     pc.fallback_cfproxy = cfg.get("cfproxy", DEFAULT_CONFIG["cfproxy"])
     pc.cfproxy_user_domains = coerce_domain_list(cfg.get("cfproxy_user_domain", DEFAULT_CONFIG["cfproxy_user_domain"]))
     pc.cfproxy_worker_domains = coerce_domain_list(cfg.get("cfproxy_worker_domain", DEFAULT_CONFIG["cfproxy_worker_domain"]))
+    pc.ws_keepalive_interval = max(0, cfg.get("ws_keepalive_interval", DEFAULT_CONFIG["ws_keepalive_interval"]))
     return True
 
 
