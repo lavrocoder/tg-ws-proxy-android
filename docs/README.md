@@ -7,15 +7,6 @@
 
 ##
 
-> [!TIP]
->
-> ### [🎉 Поддержать меня](./Funding.md)
->
-> **USDT (TRC20)**: `TXPnKs2Ww1RD8JN6nChFUVmi5r2hqrWjuu`  
-> **BTC**: `bc1qr8vd6jelkyyry3m4mq6z5txdx4pl856fu6ss0w`  
-> **ETH**: `0x1417878fdc5047E670a77748B34819b9A49C72F1`  
-> **Другие монеты**: https://nowpayments.io/donation/flowseal
-
 > [!CAUTION]
 >
 > ### Реакция антивирусов
@@ -31,6 +22,14 @@
 # TG WS Proxy
 
 **Локальный MTProto-прокси** для Telegram Desktop, который **ускоряет работу Telegram**, перенаправляя трафик через WebSocket-соединения. Данные передаются в том же зашифрованном виде, а для работы не нужны сторонние серверы.
+
+> [!NOTE]
+>
+> ### 📱 Android
+>
+> Это форк [Flowseal/tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) с добавленным **Android-приложением**: тот же прокси запускается на телефоне (через [Chaquopy](https://chaquo.com/chaquopy/)), а Telegram для Android настраивается на `127.0.0.1` как на MTProto-прокси.
+>
+> Сборка APK, установка и сборка релиза — в **[android/README.md](../android/README.md)**.
 
 <picture>
   <source srcset="./images/preview-dark.png" media="(prefers-color-scheme: dark)">
