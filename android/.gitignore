@@ -1,0 +1,12 @@
+# Keep signing material out of version control
+keystore.properties
+*.jks
+*.keystore
+
+# Build output
+.gradle/
+build/
+local.properties
+
+# Claude Code session files
+.claude/

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TG WS Proxy</string>
+
+    <string name="label_port">Порт</string>
+    <string name="label_secret">Secret (32 hex)</string>
+    <string name="label_dc">DC → IP (например 4:149.154.167.220)</string>
+
+    <string name="generate">Сгенерировать secret</string>
+    <string name="start">Запустить прокси</string>
+    <string name="stop">Остановить прокси</string>
+    <string name="open_telegram">Открыть в Telegram</string>
+    <string name="copy_link">Скопировать ссылку</string>
+
+    <string name="running">Статус: работает</string>
+    <string name="stopped">Статус: остановлен</string>
+
+    <string name="label_log">Лог</string>
+    <string name="link_copied">Ссылка скопирована</string>
+    <string name="no_telegram">Telegram не установлен</string>
+    <string name="bad_secret">Secret должен быть 32 hex-символа</string>
+
+    <string name="channel_name">TG WS Proxy</string>
+    <string name="notif_title">TG WS Proxy работает</string>
+    <string name="notif_text">MTProto-прокси на 127.0.0.1:%1$d</string>
+    <string name="action_stop">Остановить</string>
+</resources>
