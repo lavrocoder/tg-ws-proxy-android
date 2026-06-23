@@ -27,6 +27,7 @@ class MainActivity : Activity() {
     private lateinit var portEdit: EditText
     private lateinit var secretEdit: EditText
     private lateinit var dcEdit: EditText
+    private lateinit var workerEdit: EditText
     private lateinit var statusView: TextView
     private lateinit var toggleBtn: Button
     private lateinit var logView: TextView
@@ -46,6 +47,7 @@ class MainActivity : Activity() {
         portEdit = findViewById(R.id.port)
         secretEdit = findViewById(R.id.secret)
         dcEdit = findViewById(R.id.dc_ips)
+        workerEdit = findViewById(R.id.worker)
         statusView = findViewById(R.id.status)
         toggleBtn = findViewById(R.id.toggle)
         logView = findViewById(R.id.log)
@@ -54,6 +56,7 @@ class MainActivity : Activity() {
         portEdit.setText(prefs.getInt("port", 1443).toString())
         secretEdit.setText(loadOrCreateSecret())
         dcEdit.setText(loadDcIps())
+        workerEdit.setText(prefs.getString("worker", ""))
 
         toggleBtn.setOnClickListener { if (isRunning()) stopProxy() else startProxy() }
         findViewById<Button>(R.id.generate).setOnClickListener {
@@ -125,6 +128,7 @@ class MainActivity : Activity() {
             .putInt("port", currentPort())
             .putString("secret", secretEdit.text.toString().trim())
             .putString("dc_ips", dcEdit.text.toString().trim())
+            .putString("worker", workerEdit.text.toString().trim())
             .apply()
     }
 
@@ -139,12 +143,23 @@ class MainActivity : Activity() {
             .putExtra(ProxyService.EXTRA_PORT, currentPort())
             .putExtra(ProxyService.EXTRA_SECRET, secret)
             .putExtra(ProxyService.EXTRA_DC_IPS, dcEdit.text.toString().trim())
+            .putExtra(ProxyService.EXTRA_WORKER, workerEdit.text.toString().trim())
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
         } else {
             startService(intent)
         }
-        statusView.postDelayed({ refreshUi() }, 500)
+        statusView.postDelayed({
+            refreshUi()
+            if (!isRunning()) {
+                val err = try {
+                    runner.callAttr("last_error").toString()
+                } catch (_: Throwable) {
+                    ""
+                }
+                if (err.isNotBlank()) toast(err)
+            }
+        }, 800)
     }
 
     private fun stopProxy() {
@@ -186,6 +201,7 @@ class MainActivity : Activity() {
         portEdit.isEnabled = !running
         secretEdit.isEnabled = !running
         dcEdit.isEnabled = !running
+        workerEdit.isEnabled = !running
         findViewById<Button>(R.id.generate).isEnabled = !running
     }
 

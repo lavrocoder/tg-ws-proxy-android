@@ -68,6 +68,20 @@
             android:inputType="text"
             android:fontFamily="monospace" />
 
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:text="@string/label_worker" />
+
+        <EditText
+            android:id="@+id/worker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textUri"
+            android:hint="@string/hint_worker"
+            android:fontFamily="monospace" />
+
         <Button
             android:id="@+id/toggle"
             android:layout_width="match_parent"

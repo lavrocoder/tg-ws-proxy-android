@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import asyncio
 import logging
+import socket
 import threading
 
 from collections import deque
@@ -67,6 +68,7 @@ _thread: threading.Thread | None = None
 _loop: asyncio.AbstractEventLoop | None = None
 _stop_event: asyncio.Event | None = None
 _ready = threading.Event()
+_last_error: str = ""
 
 
 def gen_secret() -> str:
@@ -93,16 +95,50 @@ def is_running() -> bool:
     return _thread is not None and _thread.is_alive()
 
 
-def _configure(port: int, secret: str, dc_ips, fallback_cfproxy: bool) -> None:
+def last_error() -> str:
+    """Reason the last start() failed (empty if none)."""
+    return _last_error
+
+
+def _check_port(host: str, port: int) -> str:
+    """Return '' if (host, port) is free to bind, else a user-facing error.
+
+    Avoids launching the proxy thread only to crash on bind with EADDRINUSE,
+    which would leave the UI stuck on 'start'.
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        s.bind((host, int(port)))
+        return ""
+    except OSError as exc:
+        return (f"Порт {port} занят (errno {exc.errno}). "
+                f"Смените порт или перезапустите приложение (Force stop).")
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+
+
+def _configure(port: int, secret: str, dc_ips, fallback_cfproxy: bool,
+               worker_domains="") -> None:
     proxy_config.host = "127.0.0.1"
     proxy_config.port = int(port)
     proxy_config.secret = secret
 
-    dc_list = coerce_domain_list(dc_ips)
-    if not dc_list:
+    # dc_ips is None  -> use the standard default (home DC + media).
+    # dc_ips is ""     -> user cleared the field on purpose: no direct WS
+    #                     bridge, everything goes through fallback (CF worker /
+    #                     CF proxy). Needed on networks that block the direct
+    #                     kwsN.web.telegram.org path.
+    if dc_ips is None:
         dc_list = ["2:149.154.167.220", "4:149.154.167.220"]
+    else:
+        dc_list = coerce_domain_list(dc_ips)
     proxy_config.dc_redirects = parse_dc_ip_list(dc_list)
 
+    proxy_config.cfproxy_worker_domains = coerce_domain_list(worker_domains)
     proxy_config.fallback_cfproxy = bool(fallback_cfproxy)
     # Fake TLS / proxy-protocol are desktop/server features; keep defaults off.
     proxy_config.fake_tls_domain = ""
@@ -131,13 +167,15 @@ def _thread_main() -> None:
 
 
 def start(port: int = 1443, secret: str = "", dc_ips=None,
-          fallback_cfproxy: bool = True) -> str:
+          fallback_cfproxy: bool = True, worker_domains="") -> str:
     """Configure and start the proxy on a background thread.
 
-    Returns the secret actually in use (generated if none was supplied).
+    Returns the secret actually in use (generated if none was supplied),
+    or "" if startup failed (see last_error()).
     Idempotent: a no-op if already running.
     """
-    global _thread
+    global _thread, _last_error
+    _last_error = ""
     if is_running():
         return proxy_config.secret
 
@@ -145,7 +183,14 @@ def start(port: int = 1443, secret: str = "", dc_ips=None,
         secret = gen_secret()
 
     _setup_logging()
-    _configure(port, secret, dc_ips, fallback_cfproxy)
+
+    err = _check_port("127.0.0.1", port)
+    if err:
+        _last_error = err
+        log.error(err)
+        return ""
+
+    _configure(port, secret, dc_ips, fallback_cfproxy, worker_domains)
 
     _ready.clear()
     _thread = threading.Thread(target=_thread_main, name="tg-ws-proxy",

@@ -4,7 +4,9 @@
 
     <string name="label_port">Порт</string>
     <string name="label_secret">Secret (32 hex)</string>
-    <string name="label_dc">DC → IP (например 4:149.154.167.220)</string>
+    <string name="label_dc">DC → IP (очистите поле, чтобы весь трафик шёл через CF/worker)</string>
+    <string name="label_worker">CF Worker домен (необязательно, для заблокированных сетей)</string>
+    <string name="hint_worker">напр. random-1234.username.workers.dev</string>
 
     <string name="generate">Сгенерировать secret</string>
     <string name="start">Запустить прокси</string>

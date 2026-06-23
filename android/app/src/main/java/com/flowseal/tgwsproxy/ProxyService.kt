@@ -18,6 +18,7 @@ class ProxyService : Service() {
         const val EXTRA_PORT = "port"
         const val EXTRA_SECRET = "secret"
         const val EXTRA_DC_IPS = "dc_ips"
+        const val EXTRA_WORKER = "worker"
         const val ACTION_STOP = "com.flowseal.tgwsproxy.STOP"
 
         private const val CHANNEL_ID = "tg_ws_proxy"
@@ -36,10 +37,20 @@ class ProxyService : Service() {
         val port = intent?.getIntExtra(EXTRA_PORT, 1443) ?: 1443
         val secret = intent?.getStringExtra(EXTRA_SECRET) ?: ""
         val dcIps = intent?.getStringExtra(EXTRA_DC_IPS) ?: ""
+        val worker = intent?.getStringExtra(EXTRA_WORKER) ?: ""
+
+        // No secret means a config-less (re)start; don't bind with a random
+        // secret that would mismatch what Telegram has. Bail out instead.
+        if (secret.isBlank()) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
 
         startForegroundCompat(port)
-        startProxy(port, secret, dcIps)
-        return START_STICKY
+        startProxy(port, secret, dcIps, worker)
+        // REDELIVER keeps the original intent (port/secret) if Android
+        // restarts us after being killed — no surprise secret regeneration.
+        return START_REDELIVER_INTENT
     }
 
     override fun onDestroy() {
@@ -49,11 +60,11 @@ class ProxyService : Service() {
 
     private fun runner() = Python.getInstance().getModule("android_runner")
 
-    private fun startProxy(port: Int, secret: String, dcIps: String) {
-        runner().callAttr(
-            "start", port, secret,
-            if (dcIps.isBlank()) null else dcIps, true
-        )
+    private fun startProxy(port: Int, secret: String, dcIps: String, worker: String) {
+        // Pass dcIps as-is: "" means the user deliberately cleared the field
+        // (route everything through fallback / CF worker), which differs from
+        // the default both-DCs config.
+        runner().callAttr("start", port, secret, dcIps, true, worker)
     }
 
     private fun stopProxy() {
